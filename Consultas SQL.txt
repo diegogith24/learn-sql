@@ -1,0 +1,156 @@
+--1- Devuelve todas las películas
+SELECT * FROM MOVIES 
+--2- Devuelve todos los géneros existentes
+SELECT * FROM GENRES
+--3- Devuelve la lista de todos los estudios de grabación que estén activos
+SELECT * FROM STUDIOS WHERE STUDIO_ACTIVE = 1 
+--4- Devuelve una lista de los 20 últimos miembros en anotarse a la plataforma
+SELECT * FROM USERS ORDER BY USER_JOIN_DATE DESC LIMIT 20
+--DIFICULTAD: Fácil
+
+--5- Devuelve las 20 duraciones de películas más frecuentes, ordenados de mayor a menor
+SELECT COUNT (MOVIE_DURATION) AS FRECUENCIA FROM MOVIES GROUP BY MOVIE_DURATION ORDER BY FRECUENCIA DESC LIMIT 20
+--6- Devuelve las películas del año 2000 en adelante que empiecen por la letra A.
+SELECT * FROM MOVIES WHERE YEAR(MOVIE_RELEASE_DATE) >= 2000 AND MOVIE_NAME LIKE 'A%'
+--7- Devuelve los actores nacidos un mes de Junio
+SELECT * FROM ACTORS WHERE MONTH(ACTOR_BIRTH_DATE) = 06
+--8- Devuelve los actores nacidos cualquier mes que no sea Junio y que sigan vivos
+SELECT * FROM ACTORS WHERE MONTH(ACTOR_BIRTH_DATE) <> 06 AND ACTOR_DEAD_DATE IS NULL
+--9- Devuelve el nombre y la edad de todos los directores menores o iguales de 50 años que estén vivos
+SELECT DIRECTOR_NAME, YEAR(CURRENT_DATE) - YEAR(DIRECTOR_BIRTH_DATE) AS AGE FROM DIRECTORS WHERE DIRECTOR_DEAD_DATE IS NULL AND (YEAR(CURRENT_DATE) - YEAR(DIRECTOR_BIRTH_DATE)) <= 50
+--10- Devuelve el nombre y la edad de todos los actores menores de 50 años que hayan fallecido
+SELECT DIRECTOR_NAME, YEAR(CURRENT_DATE) - YEAR(DIRECTOR_BIRTH_DATE) AS AGE FROM DIRECTORS WHERE DIRECTOR_DEAD_DATE IS NOT NULL AND (YEAR(CURRENT_DATE) - YEAR(DIRECTOR_BIRTH_DATE)) < 50
+--11- Devuelve el nombre de todos los directores menores o iguales de 40 años que estén vivos
+SELECT DIRECTOR_NAME FROM DIRECTORS WHERE DIRECTOR_DEAD_DATE IS NULL AND YEAR(CURRENT_DATE) - YEAR(DIRECTOR_BIRTH_DATE) <= 40
+--12- Indica la edad media de los directores vivos
+SELECT AVG(YEAR(CURRENT_DATE) - YEAR(DIRECTOR_BIRTH_DATE)) FROM DIRECTORS WHERE DIRECTOR_DEAD_DATE IS NULL
+--13- Indica la edad media de los actores que han fallecido
+SELECT AVG(YEAR(CURRENT_DATE) - YEAR(DIRECTOR_BIRTH_DATE)) FROM DIRECTORS WHERE DIRECTOR_DEAD_DATE IS NOT NULL
+
+
+
+--14- Devuelve el nombre de todas las películas y el nombre del estudio que las ha realizado
+SELECT MOVIE_NAME, STUDIO_NAME FROM MOVIES AS M INNER JOIN STUDIOS AS S ON M.STUDIO_ID = S.STUDIO_ID
+--15- Devuelve los miembros que accedieron al menos una película entre el año 2010 y el 2015
+SELECT USER_ID FROM USER_MOVIE_ACCESS WHERE YEAR(ACCESS_DATE) BETWEEN 2010 AND 2015
+--16- Devuelve cuantas películas hay de cada país
+SELECT NATIONALITY_NAME, COUNT(NATIONALITY_ID) AS TOTAL_PELICULAS FROM NATIONALITIES AS N JOIN MOVIES AS M ON N.NATIONALITY_ID = M.NATIONALITY_ID GROUP BY NATIONALITY_NAME
+--17- Devuelve todas las películas que hay de género documental
+SELECT GENRE_NAME, COUNT(GENRE_ID) AS TOTAL_PELICULAS FROM MOVIES AS M JOIN GENRES AS G ON M.GENRE_ID = G.GENRE_ID WHERE GENRE_ID = 2 GROUP BY GENRE_NAME
+--18- Devuelve todas las películas creadas por directores nacidos a partir de 1980 y que todavía están vivos
+SELECT MOVIE_NAME FROM MOVIES AS M JOIN DIRECTORS AS D ON M.DIRECTOR_ID = D.DIRECTOR_ID WHERE YEAR(DIRECTOR_BIRTH_DATE) >= 1980 AND DIRECTOR_DEAD_DATE IS NULL 
+--19- Indica si hay alguna coincidencia de nacimiento de ciudad (y si las hay, indicarlas) entre los miembros de la plataforma y los directores
+SELECT USER_NAME, DIRECTOR_NAME FROM USERS AS U LEFT JOIN DIRECTORS AS D ON U.USER_TOWN = D.DIRECTOR_BIRTH_PLACE
+--20- Devuelve el nombre y el año de todas las películas que han sido producidas por un estudio que actualmente no esté activo
+SELECT DISTINCT MOVIE_NAME, YEAR(MOVIE_RELEASE_DATE) AS MOVIE_YEAR FROM MOVIES AS M JOIN STUDIOS AS S ON M.MOVIE_ID = S.STUDIO_ACTIVE
+--21- Devuelve una lista de las últimas 10 películas a las que se ha accedido
+SELECT (*) FROM MOVIES AS M JOIN USER_MOVIE_ACCESS AS U ON M.MOVIE_ID = U.ACCESS_ID ORDER BY ACCESS_DATE DESC LIMIT 10
+--22- Indica cuántas películas ha realizado cada director antes de cumplir 41 años
+SELECT D.DIRECTOR_NAME, COUNT(M.MOVIE_ID) AS TOTAL_MOVIES_BEFORE_41 FROM MOVIES AS M JOIN DIRECTORS AS D ON M.DIRECTOR_ID = D.DIRECTOR_ID WHERE MOVIE_RELEASE_DATE < DATE_ADD(D.DIRECTOR_BIRTH_DATE, INTERVAL 41 YEAR) GROUP BY D.DIRECTOR_NAME
+--23- Indica cuál es la media de duración de las películas de cada director
+SELECT D.DIRECTOR_NAME, AVG(MOVIE_DURATION) AS AVG_MOVIE_DURATION FROM MOVIES AS M JOIN DIRECTORS AS D ON M.DIRECTOR_ID = D.DIRECTOR_ID GROUP BY DIRECTOR_NAME
+--24- Indica cuál es la el nombre y la duración mínima de las películas a las que se ha accedido en los últimos 2 años por los miembros del plataforma (La “fecha de ejecución” de esta consulta es el 25-01-2019)
+SELECT M.MOVIE_NAME, M.MOVIE_DURATION FROM MOVIES AS M JOIN USER_MOVIE_ACCESS AS UMA ON M.MOVIE_ID  = UMA.MOVIE_ID
+WHERE UMA.ACCESS_DATE BETWEEN '2017-01-25' AND '2019-01-25' AND M.MOVIE_DURATION = (SELECT MIN(M.MOVIE_DURATION) 
+FROM MOVIES AS M JOIN USER_MOVIE_ACCESS AS UMA ON M.MOVIE_ID = UMA.MOVIE_ID
+WHERE UMA.ACCESS_DATE BETWEEN '2017-01-25' AND '2019-01-25') GROUP BY MOVIE_NAME, M.MOVIE_DURATION
+--25- Indica el número de películas que hayan hecho los directores durante las décadas de los 60, 70 y 80 que contengan la palabra “The” en cualquier parte del título
+SELECT D.DIRECTOR_NAME,
+    SUM(CASE WHEN YEAR(M.MOVIE_RELEASE_DATE) BETWEEN 1960 AND 1969 THEN 1 ELSE 0 END) AS TOTAL_60s,
+    SUM(CASE WHEN YEAR(M.MOVIE_RELEASE_DATE) BETWEEN 1970 AND 1979 THEN 1 ELSE 0 END) AS TOTAL_70s,
+    SUM(CASE WHEN YEAR(M.MOVIE_RELEASE_DATE) BETWEEN 1980 AND 1989 THEN 1 ELSE 0 END) AS TOTAL_80s
+FROM MOVIES AS M 
+JOIN DIRECTORS AS D ON M.DIRECTOR_ID = D.DIRECTOR_ID
+WHERE YEAR(M.MOVIE_RELEASE_DATE) BETWEEN 1960 AND 1989 AND M.MOVIE_NAME LIKE '%The%'
+GROUP BY M.DIRECTOR_ID, D.DIRECTOR_NAME
+ORDER BY D.DIRECTOR_NAME
+
+
+
+
+--26- Lista nombre, nacionalidad y director de todas las películas
+SELECT M.MOVIE_NAME, N.NATIONALITY_NAME, D.DIRECTOR_NAME FROM MOVIES AS M JOIN NATIONALITIES AS N ON M.NATIONALITY_ID = N.NATIONALITY_ID JOIN DIRECTORS AS D ON M.DIRECTOR_ID = D.DIRECTOR_ID
+--27- Muestra las películas con los actores que han participado en cada una de ellas
+SELECT M.MOVIE_NAME, A.ACTOR_NAME FROM MOVIES AS M JOIN MOVIES_ACTORS AS MA ON M.MOVIE_ID = MA.MOVIE_ACTORS_ID JOIN ACTORS AS A ON A.ACTOR_ID = MA.MOVIE_ACTORS_ID
+--28- Indica cual es el nombre del director del que más películas se ha accedido
+SELECT D.DIRECTOR_NAME, COUNT(U.ACCESS_TYPE) AS TOTAL_ACCESS FROM DIRECTORS AS D JOIN MOVIES AS M ON D.DIRECTOR_ID = M.DIRECTOR_ID JOIN USER_MOVIE_ACCESS AS U ON U.MOVIE_ID = M.MOVIE_ID GROUP BY D.DIRECTOR_NAME ORDER BY TOTAL_ACCESS DESC LIMIT 1
+--29- Indica cuantos premios han ganado cada uno de los estudios con las películas que han creado
+SELECT S.STUDIO_NAME, COUNT(A.AWARD_ID) AS TOTAL_AWARDS FROM STUDIOS AS S LEFT JOIN MOVIES AS M ON M.STUDIO_ID = S.STUDIO_ID LEFT JOIN AWARDS AS A ON M.MOVIE_ID = A.MOVIE_ID  GROUP BY STUDIO_NAME
+--30- Indica el número de premios a los que estuvo nominado un actor, pero que no ha conseguido (Si una película está nominada a un premio, su actor también lo está)
+SELECT A.ACTOR_NAME, COUNT(AW.AWARD_ALMOST_WIN) AS TOTAL_ALMOST_WIN FROM ACTORS AS A LEFT JOIN MOVIES AS M ON M.MOVIE_ID = A.ACTOR_ID LEFT JOIN AWARDS AS AW ON M.MOVIE_ID = AW.AWARD_ID GROUP BY ACTOR_NAME ORDER BY TOTAL_ALMOST_WIN DESC
+--31- Indica cuantos actores y directores hicieron películas para los estudios no activos
+SELECT 'ACTORS' AS PERSON, COUNT(DISTINCT A.ACTOR_ID) AS TOTAL_ACTORS FROM STUDIOS AS S JOIN MOVIES AS M ON M.STUDIO_ID = S.STUDIO_ID JOIN ACTORS AS A ON M.MOVIE_ID = A.ACTOR_ID WHERE S.STUDIO_ACTIVE = 0
+UNION ALL
+SELECT 'DIRECTORS' AS PERSON, COUNT(DISTINCT M.DIRECTOR_ID) AS TOTAL_DIRECTORS FROM STUDIOS AS S JOIN MOVIES AS M ON S.STUDIO_ID = M.STUDIO_ID WHERE S.STUDIO_ACTIVE = 0
+--32- Indica el nombre, ciudad, y teléfono de todos los miembros de la plataforma que hayan accedido películas que hayan sido nominadas a más de 150 premios y ganaran menos de 50
+WITH PeliculasFiltradas AS (
+    SELECT
+        MOVIE_ID
+    FROM
+        AWARDS AS AW    
+    WHERE
+        AW.AWARD_NOMINATION > 150
+        AND
+        AW.AWARD_WIN < 50
+)
+SELECT DISTINCT
+    U.USER_NAME,
+    U.USER_TOWN,
+    U.USER_PHONE
+FROM
+    USERS AS U
+JOIN
+    USER_MOVIE_ACCESS AS UMA ON U.USER_ID = UMA.USER_ID
+JOIN
+    PeliculasFiltradas PF ON UMA.MOVIE_ID = PF.MOVIE_ID
+ORDER BY
+   U.USER_NAME;
+--33- Comprueba si hay errores en la BD entre las películas y directores (un director muerto en el 76 no puede dirigir una película en el 88)
+SELECT M.MOVIE_NAME AS MOVIE_WITH_MISTAKE, M.MOVIE_RELEASE_DATE, D.DIRECTOR_NAME, D.DIRECTOR_DEAD_DATE
+FROM MOVIES AS M JOIN DIRECTORS AS D ON M.DIRECTOR_ID = D.DIRECTOR_ID 
+WHERE D.DIRECTOR_DEAD_DATE IS NOT NULL AND M.MOVIE_RELEASE_DATE >D.DIRECTOR_DEAD_DATE 
+ORDER BY D.DIRECTOR_DEAD_DATE , M.MOVIE_RELEASE_DATE 
+--34- Utilizando la información de la sentencia anterior, modifica la fecha de defunción a un año más tarde del estreno de la película (mediante sentencia SQL)
+UPDATE DIRECTORS SET DIRECTOR_DEAD_DATE = '2002-05-04' WHERE DIRECTOR_ID = 27
+UPDATE DIRECTORS SET DIRECTOR_DEAD_DATE = '2010-05-04' WHERE DIRECTOR_ID = 47
+SELECT (*) FROM DIRECTORS WHERE DIRECTOR_ID = 27
+SELECT (*) FROM DIRECTORS WHERE DIRECTOR_ID = 47
+
+
+
+--35- Indica cuál es el género favorito de cada uno de los directores cuando dirigen una película
+WITH ConteoPorDirectorGenero AS (
+    SELECT
+        D.DIRECTOR_ID,
+        D.DIRECTOR_NAME,
+        G.GENRE_NAME,
+        COUNT(M.MOVIE_ID) AS TotalPeliculas
+    FROM
+        DIRECTORS AS D
+    JOIN
+        MOVIES AS M ON D.DIRECTOR_ID = M.DIRECTOR_ID
+    JOIN
+        GENRES AS G ON M.GENRE_ID = G.GENRE_ID
+    GROUP BY
+        D.DIRECTOR_ID, D.DIRECTOR_NAME, G.GENRE_NAME
+),
+RankingGenero AS (
+    SELECT
+        DIRECTOR_NAME,
+        GENRE_NAME,
+        TotalPeliculas, RANK() OVER (PARTITION BY DIRECTOR_ID ORDER BY TotalPeliculas DESC) AS Rango
+    FROM
+        ConteoPorDirectorGenero
+)
+SELECT
+   DIRECTOR_NAME,
+    GENRE_NAME AS GeneroFavorito,
+    TotalPeliculas
+FROM
+    RankingGenero
+WHERE
+    Rango = 1
+ORDER BY
+    DIRECTOR_NAME, TotalPeliculas DESC;
+--36- Indica cuál es la nacionalidad favorita de cada uno de los estudios en la producción de las películas
+--37- Indica cuál fue la primera película a la que accedieron los miembros de la plataforma cuyos teléfonos tengan como último dígito el ID de alguna nacionalidad
